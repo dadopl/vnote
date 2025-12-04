@@ -6,6 +6,14 @@ package-lock.json
 .env.local
 *.env.local
 
+# SSL Certificates (zawierają klucze prywatne)
+*.pem
+*.key
+*.crt
+*.cer
+nginx/ssl/
+ssl/
+
 # Logs
 *.log
 npm-debug.log*
