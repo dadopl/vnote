@@ -1,0 +1,102 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: vnotes-nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - voice-notes
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+  voice-notes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: voice-notes-app
+    env_file:
+      - backend/.env
+      - backend/.env.local
+    expose:
+      - "7776"
+    environment:
+      - WHISPER_URL=http://whisper:9000
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+    volumes:
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+      - ./recordings:/app/recordings
+    depends_on:
+      - mariadb
+      - whisper
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+  whisper:
+    build:
+      context: ./whisper
+      dockerfile: Dockerfile
+    container_name: whisper-service
+    env_file:
+      - backend/.env
+      - backend/.env.local
+    ports:
+      - "9102:9000"
+    environment:
+      - WHISPER_DEVICE=cpu
+      - WHISPER_COMPUTE_TYPE=int8
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+      - ./whisper_audio_debug:/app/audio_debug
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+  mariadb:
+    image: mariadb:11.6
+    container_name: vnotes-mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_secure_pass_2024
+      - MYSQL_DATABASE=vnotes
+      - MYSQL_USER=vnotes_user
+      - MYSQL_PASSWORD=vnotes_secure_pass_2024
+      - MYSQL_CHARSET=utf8mb4
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: vnotes-phpmyadmin
+    env_file:
+      - backend/.env
+      - backend/.env.local
+    ports:
+      - "7778:80"
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_PORT=3306
+      - UPLOAD_LIMIT=50M
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+networks:
+  vnotes-network:
+    driver: bridge
+
+volumes:
+  whisper-models:
+  mariadb-data:
