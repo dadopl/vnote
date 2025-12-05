@@ -43,7 +43,6 @@ class TextCorrectionController {
                     type: type,
                     customInstruction: type === 'custom' ? customInstruction : null
                 });
-                console.log('Note saved to database');
             } catch (dbError) {
                 console.error('Database save error:', dbError);
             }

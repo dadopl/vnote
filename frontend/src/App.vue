@@ -327,6 +327,43 @@
             </p>
         </div>
 
+        <!-- Therapy Audio Player (shown when therapy audio is generated) -->
+        <div v-if="therapyAudio && correctionType === 'sesja'" class="mb-6 rounded-lg p-4 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-lg">{{ therapyAudioPlaying ? '⏸' : '▶' }}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-800">{{ t('therapy.audioResponse') || 'Therapist Response' }}</h3>
+                        <p class="text-xs text-slate-500">{{ therapyAudio.filename }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        @click="playTherapyAudio"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                    >
+                        {{ therapyAudioPlaying ? (t('buttons.stop') || 'Stop') : (t('buttons.play') || 'Play') }}
+                    </button>
+                    <button
+                        @click="deleteTherapyAudio"
+                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
+                    >
+                        {{ t('buttons.delete') || 'Delete' }}
+                    </button>
+                </div>
+            </div>
+            <audio
+                ref="therapyAudioPlayer"
+                :src="therapyAudioUrl"
+                @ended="onTherapyAudioEnded"
+                @play="therapyAudioPlaying = true"
+                @pause="therapyAudioPlaying = false"
+                class="hidden"
+            ></audio>
+        </div>
+
         <!-- Text Areas -->
         <div class="grid lg:grid-cols-2 gap-6 mb-6">
             <!-- Raw Text -->
@@ -624,6 +661,8 @@ export default {
             // Therapy session
             therapyHistory: [],
             therapyExchangeCount: 10,
+            therapyAudio: null,
+            therapyAudioPlaying: false,
 
             // Services
             audioService: null,
@@ -640,6 +679,12 @@ export default {
         },
         isMobileDevice() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        },
+        therapyAudioUrl() {
+            if (this.therapyAudio && this.therapyAudio.filename) {
+                return this.apiService.getPiperAudioUrl(this.therapyAudio.filename);
+            }
+            return null;
         }
     },
     watch: {
@@ -1259,6 +1304,9 @@ export default {
                     // Wyczyść pole "Surowy tekst" aby nie wysyłać ponownie tej samej wypowiedzi
                     this.finalTranscript = '';
                     StorageService.setRawText('');
+
+                    // Generate therapy audio asynchronously via separate endpoint
+                    this.generateTherapyAudio(data.correctedText);
                 }
 
                 this.correctedText = data.correctedText;
@@ -1294,11 +1342,61 @@ export default {
         clearTherapyHistory() {
             if (confirm(this.t('therapy.clearHistory') + '?')) {
                 this.therapyHistory = [];
+                this.therapyAudio = null;
                 localStorage.removeItem('therapyHistory');
                 this.showSuccess = true;
                 setTimeout(() => {
                     this.showSuccess = false;
                 }, 2000);
+            }
+        },
+
+        playTherapyAudio() {
+            const audio = this.$refs.therapyAudioPlayer;
+            if (!audio) return;
+
+            if (this.therapyAudioPlaying) {
+                audio.pause();
+            } else {
+                audio.play().catch(err => {
+                    console.error('Error playing therapy audio:', err);
+                });
+            }
+        },
+
+        onTherapyAudioEnded() {
+            this.therapyAudioPlaying = false;
+        },
+
+        async generateTherapyAudio(text) {
+            try {
+                const voice = this.currentLanguage === 'pl' ? 'pl_PL-gosia-medium' : 'en_US-lessac-medium';
+                const audio = await this.apiService.generatePiperAudio(text, voice);
+
+                if (audio) {
+                    this.therapyAudio = audio;
+                    // Auto-play after short delay
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            this.playTherapyAudio();
+                        }, 300);
+                    });
+                }
+            } catch (error) {
+                console.error('Error generating therapy audio:', error);
+            }
+        },
+
+        async deleteTherapyAudio() {
+            if (!this.therapyAudio) return;
+
+            try {
+                await this.apiService.deletePiperAudio(this.therapyAudio.filename);
+                this.therapyAudio = null;
+                this.therapyAudioPlaying = false;
+            } catch (error) {
+                console.error('Error deleting therapy audio:', error);
+                this.lastError = error.message;
             }
         },
 

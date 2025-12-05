@@ -64,6 +64,20 @@ Speech-to-text application with automatic AI correction by Claude. Supports both
 - Conversation context maintained (last 10 exchanges)
 - Reflective questions and empathetic responses
 - Session history with clear option
+- **Voice response with Piper TTS** - therapist responses are automatically converted to speech
+  - Local TTS engine (no external API needed)
+  - Auto-play after AI response
+  - Polish (Gosia) and English (Lessac) voices
+  - Play/Delete controls for audio
+
+### Piper TTS (Local Text-to-Speech)
+- **Offline TTS engine** - runs locally in Docker container
+- **Used for therapy sessions** - automatic voice response generation
+- **Available voices:**
+  - Polish: Gosia (Medium quality)
+  - English: Lessac (Medium quality)
+- **Audio format:** WAV
+- **No API limits** - completely local processing
 
 ### Responsive Design
 - Works on mobile and desktop
@@ -257,6 +271,7 @@ docker-compose down
 ### Services
 - **voice-notes-app** - main application (frontend + backend)
 - **whisper-service** - Whisper AI transcription service
+- **piper-service** - Piper local TTS engine (for therapy voice responses)
 - **vnotes-mariadb** - MariaDB database
 - **vnotes-phpmyadmin** - phpMyAdmin for database management
 - **vnotes-nginx** - Nginx reverse proxy with SSL
@@ -276,12 +291,12 @@ docker-compose down
 │    Static Files     │        │    Port 7776        │
 └─────────────────────┘        └─────────────────────┘
                                          │
-                    ┌────────────────────┼────────────────────┐
-                    ▼                    ▼                    ▼
-           ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-           │   MariaDB    │    │   Whisper    │    │  ElevenLabs  │
-           │  Port 3306   │    │  Port 9000   │    │     API      │
-           └──────────────┘    └──────────────┘    └──────────────┘
+              ┌──────────────┬───────────┼───────────┬──────────────┐
+              ▼              ▼           ▼           ▼              ▼
+     ┌──────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
+     │   MariaDB    │ │ Whisper  │ │  Piper   │ │ElevenLabs│ │   Claude     │
+     │  Port 3306   │ │Port 9000 │ │Port 5000 │ │   API    │ │     API      │
+     └──────────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────┘
 ```
 
 ## API Endpoints
@@ -307,12 +322,19 @@ docker-compose down
 - `POST /api/notes/save` - save note
 - `DELETE /api/notes/:id` - delete note
 
-### TTS
+### TTS (ElevenLabs)
 - `GET /api/tts/voices?language=en` - get available voices (filtered by language)
 - `POST /api/tts/generate` - generate audio from text
 - `GET /api/tts/diary` - list generated audio
 - `GET /api/tts/diary/:id` - get audio file
 - `DELETE /api/tts/diary/:id` - delete audio
+
+### Piper TTS (Local)
+- `POST /api/piper/generate` - generate audio from text (for therapy sessions)
+- `GET /api/piper/voices` - list available voices
+- `GET /api/piper/audios` - list generated audio files
+- `GET /api/piper/audio/:filename` - get audio file
+- `DELETE /api/piper/audio/:filename` - delete audio file
 
 ### Email
 - `POST /api/send-email` - send email with text
@@ -326,6 +348,7 @@ docker-compose down
 | `ELEVEN_LABS_API_KEY` | ElevenLabs API key | - |
 | `WHISPER_MODEL` | Whisper model (tiny/base/small/medium/large) | base |
 | `WHISPER_URL` | Whisper service URL | http://whisper:9000 |
+| `PIPER_URL` | Piper TTS service URL | http://piper:5000 |
 | `DB_HOST` | Database host | mariadb |
 | `DB_PORT` | Database port | 3306 |
 | `DB_NAME` | Database name | vnotes |

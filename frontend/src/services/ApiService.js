@@ -240,4 +240,49 @@ export class ApiService {
 
         return response.json();
     }
+
+    // Piper TTS methods (therapy sessions)
+    getPiperAudioUrl(filename) {
+        return `${this.baseUrl}/api/piper/audio/${filename}`;
+    }
+
+    async generatePiperAudio(text, voice) {
+        const response = await fetch(`${this.baseUrl}/api/piper/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text, voice })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error);
+        }
+
+        const data = await response.json();
+        return data.audio;
+    }
+
+    async deletePiperAudio(filename) {
+        const response = await fetch(`${this.baseUrl}/api/piper/audio/${filename}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete therapy audio');
+        }
+
+        return response.json();
+    }
+
+    async getPiperAudios() {
+        const response = await fetch(`${this.baseUrl}/api/piper/audios`);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch therapy audios');
+        }
+
+        return response.json();
+    }
 }

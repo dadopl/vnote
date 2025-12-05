@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy and build frontend first
 COPY frontend/package*.json ./frontend/
 WORKDIR /app/frontend
-RUN npm install
+RUN npm install --retry 3
 COPY frontend ./
 RUN npm run build
 
@@ -18,7 +18,7 @@ COPY backend/package*.json ./backend/
 
 # Install backend dependencies
 WORKDIR /app/backend
-RUN npm install
+RUN npm install --retry 3
 
 # Copy backend application files
 COPY backend ./

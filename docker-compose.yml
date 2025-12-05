@@ -26,6 +26,7 @@ services:
       - "7776"
     environment:
       - WHISPER_URL=http://whisper:9000
+      - PIPER_URL=http://piper:5000
       - DB_HOST=mariadb
       - DB_PORT=3306
     volumes:
@@ -55,6 +56,19 @@ services:
     volumes:
       - whisper-models:/root/.cache/huggingface
       - ./whisper_audio_debug:/app/audio_debug
+    restart: unless-stopped
+    networks:
+      - vnotes-network
+
+  piper:
+    build:
+      context: ./piper
+      dockerfile: Dockerfile
+    container_name: piper-service
+    environment:
+      - PIPER_OUTPUT_DIR=/app/output
+    volumes:
+      - ./recordings/piper:/app/output
     restart: unless-stopped
     networks:
       - vnotes-network

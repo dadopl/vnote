@@ -66,7 +66,8 @@ export const translations = {
             context: 'Context: last',
             exchanges: 'exchanges',
             history: 'History:',
-            clearHistory: 'Clear session history'
+            clearHistory: 'Clear session history',
+            audioResponse: 'Therapist Response'
         },
 
         // Recording
@@ -82,7 +83,9 @@ export const translations = {
             sendToAI: 'Send to AI now',
             clear: 'Clear',
             downloadTxt: 'Download TXT',
-            sendEmail: 'Send email'
+            sendEmail: 'Send email',
+            play: 'Play',
+            delete: 'Delete'
         },
 
         // TTS section
@@ -296,7 +299,8 @@ export const translations = {
             context: 'Kontekst: ostatnie',
             exchanges: 'wymian',
             history: 'Historia:',
-            clearHistory: 'Wyczyść historię sesji'
+            clearHistory: 'Wyczyść historię sesji',
+            audioResponse: 'Odpowiedź terapeuty'
         },
 
         // Recording
@@ -312,7 +316,9 @@ export const translations = {
             sendToAI: 'Wyślij do AI teraz',
             clear: 'Wyczyść',
             downloadTxt: 'Pobierz TXT',
-            sendEmail: 'Wyślij email'
+            sendEmail: 'Wyślij email',
+            play: 'Odtwórz',
+            delete: 'Usuń'
         },
 
         // TTS section
