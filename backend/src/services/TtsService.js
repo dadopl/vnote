@@ -2,6 +2,7 @@ const { ElevenLabsClient } = require('elevenlabs');
 const fs = require('fs');
 const path = require('path');
 const db = require('../models');
+const i18n = require('../config/i18n');
 
 class TtsService {
     constructor() {
@@ -9,8 +10,8 @@ class TtsService {
             apiKey: process.env.ELEVEN_LABS_API_KEY
         });
         this.diaryDir = path.join(__dirname, '../../../recordings/diary');
-        this.voicesCache = null;
-        this.voicesCacheTime = 0;
+        this.voicesCache = { en: null, pl: null };
+        this.voicesCacheTime = { en: 0, pl: 0 };
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
         this.ensureDirectoryExists();
@@ -22,15 +23,17 @@ class TtsService {
         }
     }
 
-    async getVoices() {
+    async getVoices(language = 'en') {
+        const lang = i18n.getLanguage(language);
+
         // Return cached voices if available
-        if (this.voicesCache && (Date.now() - this.voicesCacheTime < this.cacheTimeout)) {
-            return this.voicesCache;
+        if (this.voicesCache[lang] && (Date.now() - this.voicesCacheTime[lang] < this.cacheTimeout)) {
+            return this.voicesCache[lang];
         }
 
-        // Fetch voices from ElevenLabs
+        // Fetch voices from ElevenLabs filtered by language
         const voicesResponse = await this.client.voices.getShared({
-            language: 'pl',
+            language: lang,
             page_size: 100
         });
 
@@ -46,37 +49,39 @@ class TtsService {
             }))
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        // Update cache
-        this.voicesCache = mappedVoices;
-        this.voicesCacheTime = Date.now();
+        // Update cache for this language
+        this.voicesCache[lang] = mappedVoices;
+        this.voicesCacheTime[lang] = Date.now();
 
         return mappedVoices;
     }
 
-    async generateAudio(text, voiceId, noteId, voiceSettings = {}) {
+    async generateAudio(text, voiceId, noteId, voiceSettings = {}, language = 'en') {
+        const lang = i18n.getLanguage(language);
+
         if (!noteId) {
-            throw new Error('noteId jest wymagany');
+            throw new Error(i18n.getErrorMessage('noteIdRequired', lang));
         }
 
         if (text.length > 2000) {
-            throw new Error(`Tekst za długi (${text.length}/2000 znaków)`);
+            throw new Error(i18n.getErrorMessage('textTooLong', lang, text.length));
         }
 
         const timestamp = Date.now();
         const filename = `tts_${timestamp}.mp3`;
         const filepath = path.join(this.diaryDir, filename);
 
-        // Generate audio using ElevenLabs SDK
+        // Generate audio using ElevenLabs SDK with dynamic language code
         const audioStream = await this.client.textToSpeech.convert(voiceId, {
             text: text,
-            model_id: 'eleven_flash_v2_5', // szybszy model, niższa latencja
+            model_id: 'eleven_flash_v2_5',
             output_format: 'mp3_44100_128',
-            language_code: 'pl', // wymusza polski
+            language_code: i18n.getElevenLabsLanguageCode(lang),
             voice_settings: {
                 stability: voiceSettings.stability !== undefined ? voiceSettings.stability : 0,
                 similarity_boost: voiceSettings.similarity_boost !== undefined ? voiceSettings.similarity_boost : 0.75,
                 style: voiceSettings.style !== undefined ? voiceSettings.style : 0.5,
-                use_speaker_boost: true // poprawia jakość
+                use_speaker_boost: true
             }
         });
 
@@ -90,8 +95,8 @@ class TtsService {
 
         const fileSize = fs.statSync(filepath).size;
 
-        // Get voice name
-        const voices = await this.getVoices();
+        // Get voice name - pass language to getVoices
+        const voices = await this.getVoices(lang);
         const voice = voices.find(v => v.voice_id === voiceId);
         const voiceName = voice ? voice.name : 'Unknown';
 
@@ -153,27 +158,29 @@ class TtsService {
         });
     }
 
-    async getDiaryAudio(audioId) {
+    async getDiaryAudio(audioId, language = 'en') {
+        const lang = i18n.getLanguage(language);
         const audio = await db.TtsGeneration.findByPk(audioId);
 
         if (!audio) {
-            throw new Error('Audio nie znalezione');
+            throw new Error(i18n.getErrorMessage('audioNotFound', lang));
         }
 
         const filepath = audio.audioPath;
 
         if (!fs.existsSync(filepath)) {
-            throw new Error('Plik audio nie istnieje');
+            throw new Error(i18n.getErrorMessage('fileNotFound', lang));
         }
 
         return fs.createReadStream(filepath);
     }
 
-    async deleteDiaryAudio(audioId) {
+    async deleteDiaryAudio(audioId, language = 'en') {
+        const lang = i18n.getLanguage(language);
         const audio = await db.TtsGeneration.findByPk(audioId);
 
         if (!audio) {
-            throw new Error('Audio nie znalezione');
+            throw new Error(i18n.getErrorMessage('audioNotFound', lang));
         }
 
         const filepath = audio.audioPath;

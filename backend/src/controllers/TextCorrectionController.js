@@ -1,24 +1,39 @@
 const ClaudeService = require('../services/ClaudeService');
 const db = require('../models');
+const i18n = require('../config/i18n');
 
 class TextCorrectionController {
     async correct(req, res) {
         try {
-            const { text, type = 'default', customInstruction = '' } = req.body;
+            const {
+                text,
+                type = 'default',
+                customInstruction = '',
+                conversationHistory = [],
+                language = 'en'
+            } = req.body;
+
+            const lang = i18n.getLanguage(language);
 
             if (!text || !text.trim()) {
-                return res.status(400).json({ error: 'Brak tekstu do korekty' });
+                return res.status(400).json({ error: i18n.getErrorMessage('noText', lang) });
             }
 
             const apiKey = process.env.CLAUDE_API_KEY;
             if (!apiKey) {
                 return res.status(500).json({
-                    error: 'Brak klucza API. Ustaw CLAUDE_API_KEY w pliku .env'
+                    error: i18n.getErrorMessage('noApiKey', lang)
                 });
             }
 
-            // Correct text using Claude service
-            const correctedText = await ClaudeService.correctText(text, type, customInstruction);
+            // Correct text using Claude service with conversation history and language
+            const correctedText = await ClaudeService.correctText(
+                text,
+                type,
+                customInstruction,
+                conversationHistory,
+                lang
+            );
 
             // Save to database
             try {
@@ -41,12 +56,12 @@ class TextCorrectionController {
 
         } catch (error) {
             console.error('Text correction error:', error);
+            const lang = i18n.getLanguage(req.body?.language);
             res.status(500).json({
-                error: 'Błąd serwera: ' + error.message
+                error: i18n.getErrorMessage('serverError', lang) + error.message
             });
         }
     }
 }
 
 module.exports = new TextCorrectionController();
-

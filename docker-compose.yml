@@ -46,7 +46,7 @@ services:
     container_name: whisper-service
     env_file:
       - backend/.env
-      - backend/.env.local
+
     ports:
       - "9102:9000"
     environment:

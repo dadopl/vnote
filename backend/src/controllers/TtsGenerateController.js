@@ -1,29 +1,31 @@
 const TtsService = require('../services/TtsService');
+const i18n = require('../config/i18n');
 
 class TtsGenerateController {
     async generate(req, res) {
         try {
-            const { text, voiceId, noteId, voiceSettings = {} } = req.body;
+            const { text, voiceId, noteId, voiceSettings = {}, language = 'en' } = req.body;
+            const lang = i18n.getLanguage(language);
 
             if (!text || !voiceId) {
                 return res.status(400).json({
-                    error: 'Brak tekstu lub ID głosu'
+                    error: i18n.getErrorMessage('noTextOrVoice', lang)
                 });
             }
 
             if (!noteId) {
                 return res.status(400).json({
-                    error: 'noteId jest wymagany'
+                    error: i18n.getErrorMessage('noteIdRequired', lang)
                 });
             }
 
             if (text.length > 2000) {
                 return res.status(400).json({
-                    error: `Tekst za długi (${text.length}/2000 znaków)`
+                    error: i18n.getErrorMessage('textTooLong', lang, text.length)
                 });
             }
 
-            const audio = await TtsService.generateAudio(text, voiceId, noteId, voiceSettings);
+            const audio = await TtsService.generateAudio(text, voiceId, noteId, voiceSettings, lang);
 
             res.json({
                 success: true,
@@ -32,8 +34,9 @@ class TtsGenerateController {
 
         } catch (error) {
             console.error('TTS generate error:', error);
+            const lang = i18n.getLanguage(req.body?.language);
             res.status(500).json({
-                error: 'Błąd generowania audio: ' + error.message
+                error: i18n.getErrorMessage('generateError', lang) + error.message
             });
         }
     }

@@ -7,7 +7,8 @@ export class StorageService {
         RAW_TEXT: 'rawText',
         CORRECTED_TEXT: 'correctedText',
         SESSION_HISTORY: 'sessionHistory',
-        EMAIL_RECIPIENT: 'emailRecipient'
+        EMAIL_RECIPIENT: 'emailRecipient',
+        LANGUAGE: 'vnotes_language'
     };
 
     static get(key, defaultValue = null) {
@@ -61,6 +62,17 @@ export class StorageService {
 
     static setSelectedDevice(value) {
         this.set(this.KEYS.SELECTED_DEVICE, value);
+    }
+
+    static getLanguage() {
+        const lang = this.get(this.KEYS.LANGUAGE, 'en');
+        return ['en', 'pl'].includes(lang) ? lang : 'en';
+    }
+
+    static setLanguage(value) {
+        if (['en', 'pl'].includes(value)) {
+            this.set(this.KEYS.LANGUAGE, value);
+        }
     }
 
     static getRawText() {

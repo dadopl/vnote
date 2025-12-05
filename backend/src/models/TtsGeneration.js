@@ -54,7 +54,8 @@ module.exports = (sequelize, DataTypes) => {
   TtsGeneration.associate = (models) => {
     TtsGeneration.belongsTo(models.Note, {
       foreignKey: 'noteId',
-      as: 'note'
+      as: 'note',
+      onDelete: 'CASCADE'
     });
   };
 

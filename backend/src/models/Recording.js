@@ -53,7 +53,8 @@ module.exports = (sequelize, DataTypes) => {
   Recording.associate = (models) => {
     Recording.belongsTo(models.Note, {
       foreignKey: 'noteId',
-      as: 'note'
+      as: 'note',
+      onDelete: 'CASCADE'
     });
   };
 

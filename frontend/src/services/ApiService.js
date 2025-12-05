@@ -11,18 +11,26 @@ export class ApiService {
         return response.json();
     }
 
-    async correctText(text, type = 'default', customInstruction = '') {
+    async correctText(requestData) {
+        const { text, type = 'default', customInstruction = '', conversationHistory = [], language = 'en' } = requestData;
+
         const response = await fetch(`${this.baseUrl}/api/correct`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text, type, customInstruction })
+            body: JSON.stringify({
+                text,
+                type,
+                customInstruction,
+                conversationHistory,
+                language
+            })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Błąd API');
+            throw new Error(error.error);
         }
 
         return response.json();
@@ -114,27 +122,27 @@ export class ApiService {
     }
 
     // TTS methods
-    async getVoices() {
-        const response = await fetch(`${this.baseUrl}/api/tts/voices`);
+    async getVoices(language = 'en') {
+        const response = await fetch(`${this.baseUrl}/api/tts/voices?language=${language}`);
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Błąd pobierania głosów');
+            throw new Error(error.error || 'Error fetching voices');
         }
         return response.json();
     }
 
-    async generateAudio(text, voiceId, noteId, voiceSettings = {}) {
+    async generateAudio(text, voiceId, noteId, voiceSettings = {}, language = 'en') {
         const response = await fetch(`${this.baseUrl}/api/tts/generate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text, voiceId, noteId, voiceSettings })
+            body: JSON.stringify({ text, voiceId, noteId, voiceSettings, language })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Błąd generowania audio');
+            throw new Error(error.error || 'Error generating audio');
         }
 
         return response.json();
@@ -195,6 +203,39 @@ export class ApiService {
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Błąd zapisu notatki');
+        }
+
+        return response.json();
+    }
+
+    // Notes list methods
+    async getNotes(page = 1, limit = 20) {
+        const response = await fetch(`${this.baseUrl}/api/notes?page=${page}&limit=${limit}`);
+
+        if (!response.ok) {
+            throw new Error('Nie udało się pobrać listy notatek');
+        }
+
+        return response.json();
+    }
+
+    async getNote(id) {
+        const response = await fetch(`${this.baseUrl}/api/notes/${id}`);
+
+        if (!response.ok) {
+            throw new Error('Nie udało się pobrać notatki');
+        }
+
+        return response.json();
+    }
+
+    async deleteNote(id) {
+        const response = await fetch(`${this.baseUrl}/api/notes/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('Nie udało się usunąć notatki');
         }
 
         return response.json();

@@ -5,6 +5,7 @@ export class SpeechRecognitionService {
         this.onResultCallback = null;
         this.onEndCallback = null;
         this.onErrorCallback = null;
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
     init() {
@@ -15,9 +16,18 @@ export class SpeechRecognitionService {
         }
 
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = true;
-        this.recognition.interimResults = true;
+
+        // Na mobilnych urządzeniach ustawiamy bardziej konserwatywne opcje
+        if (this.isMobile) {
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+        } else {
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+        }
+
         this.recognition.lang = 'pl-PL';
+        this.recognition.maxAlternatives = 1;
 
         this.recognition.onresult = (event) => {
             if (this.onResultCallback) {
@@ -42,7 +52,14 @@ export class SpeechRecognitionService {
 
     start() {
         if (this.recognition) {
-            this.recognition.start();
+            try {
+                this.recognition.start();
+            } catch (error) {
+                console.error('Error starting recognition:', error);
+                if (this.onErrorCallback) {
+                    this.onErrorCallback(error.message);
+                }
+            }
         }
     }
 
