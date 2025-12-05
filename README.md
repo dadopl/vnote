@@ -189,7 +189,34 @@ ports:
 
 And in `nginx/nginx.conf` comment out the `server` section for port 443.
 
-### 4. Run with Docker Compose (recommended)
+### 4. Run with Makefile (recommended)
+
+The project includes a `Makefile` for convenient container management:
+
+```bash
+# Build and start all containers
+make setup
+
+# Stop all containers
+make stop
+
+# Restart all containers
+make restart
+
+# Show logs (follow mode)
+make logs
+
+# Stop and remove volumes (clean slate)
+make clean
+
+# Force rebuild without cache
+make rebuild
+
+# Show all available commands
+make help
+```
+
+### 5. Or Run with Docker Compose directly
 ```bash
 docker-compose up --build
 ```
