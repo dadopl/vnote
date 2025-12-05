@@ -1,5 +1,7 @@
 # Voice Notes App - AI-Powered Voice Notepad
 
+> ⚠️ **Disclaimer:** This application was created for learning purposes - specifically to practice pair programming with AI. It is not recommended for production use or anything other than experimentation and fun!
+
 Speech-to-text application with automatic AI correction by Claude. Supports both Web Speech API (instant) and Whisper AI (more accurate, local).
 
 ## Features
