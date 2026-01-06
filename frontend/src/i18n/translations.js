@@ -29,7 +29,12 @@ export const translations = {
         audioDevice: {
             label: 'Audio device selection',
             default: 'Default microphone',
-            microphoneNumber: 'Microphone'
+            microphoneNumber: 'Microphone',
+            types: {
+                microphone: 'Microphone',
+                lineIn: 'Line-In',
+                virtual: 'Virtual Device'
+            }
         },
 
         // Transcription mode
@@ -67,7 +72,9 @@ export const translations = {
             exchanges: 'exchanges',
             history: 'History:',
             clearHistory: 'Clear session history',
-            audioResponse: 'Therapist Response'
+            audioResponse: 'Therapist Response',
+            enableAudio: 'Generate and play audio responses',
+            enableAudioDescription: 'If enabled, therapist responses will be automatically converted to audio and played'
         },
 
         // Recording
@@ -262,7 +269,12 @@ export const translations = {
         audioDevice: {
             label: 'Wybór urządzenia audio',
             default: 'Domyślny mikrofon',
-            microphoneNumber: 'Mikrofon'
+            microphoneNumber: 'Mikrofon',
+            types: {
+                microphone: 'Mikrofon',
+                lineIn: 'Wejście liniowe',
+                virtual: 'Urządzenie wirtualne'
+            }
         },
 
         // Transcription mode
@@ -300,7 +312,9 @@ export const translations = {
             exchanges: 'wymian',
             history: 'Historia:',
             clearHistory: 'Wyczyść historię sesji',
-            audioResponse: 'Odpowiedź terapeuty'
+            audioResponse: 'Odpowiedź terapeuty',
+            enableAudio: 'Generuj i odtwarzaj audio odpowiedzi',
+            enableAudioDescription: 'Jeśli włączone, odpowiedzi terapeuty będą automatycznie zamieniane na audio i odtwarzane'
         },
 
         // Recording

@@ -6,8 +6,20 @@ class NoteListController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
             const offset = (page - 1) * limit;
+            const type = req.query.type;
+
+            console.log('NoteListController.getList - type parameter:', type, 'typeof:', typeof type);
+
+            const whereClause = {};
+            if (type !== undefined && type !== null && type !== '') {
+                whereClause.type = type;
+                console.log('NoteListController.getList - filtering by type:', type);
+            } else {
+                console.log('NoteListController.getList - no type filter, returning all notes');
+            }
 
             const { count, rows: notes } = await db.Note.findAndCountAll({
+                where: whereClause,
                 order: [['createdAt', 'DESC']],
                 limit: limit,
                 offset: offset,
@@ -19,8 +31,8 @@ class NoteListController {
             res.json({
                 notes: notes.map(note => ({
                     id: note.id,
-                    rawText: note.rawText ? note.rawText.substring(0, 200) + (note.rawText.length > 200 ? '...' : '') : '',
-                    transformedText: note.transformedText ? note.transformedText.substring(0, 200) + (note.transformedText.length > 200 ? '...' : '') : '',
+                    rawText: note.rawText || '',
+                    transformedText: note.transformedText || '',
                     type: note.type,
                     wordCount: note.rawText ? note.rawText.trim().split(/\s+/).filter(w => w.length > 0).length : 0,
                     createdAt: note.createdAt,

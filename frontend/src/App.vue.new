@@ -31,9 +31,7 @@
                 :is-mobile-device="isMobileDevice"
                 :therapy-exchange-count="therapyExchangeCount"
                 :therapy-history-length="therapyHistory.length"
-                :therapy-audio-enabled="therapyAudioEnabled"
                 @update:transcription-mode="onTranscriptionModeChange"
-                @update:therapyAudioEnabled="therapyAudioEnabled = $event"
                 @clear-therapy-history="clearTherapyHistory"
             />
 
@@ -109,8 +107,9 @@
             <history-panel
                 :dark-mode="darkMode"
                 :show="showHistory"
-                :current-type="correctionType"
-                @load-note="loadNote"
+                :session-history="sessionHistory"
+                @load-session="loadSession"
+                @clear-history="clearHistory"
             />
 
             <!-- Recordings Panel -->
@@ -303,7 +302,6 @@ export default {
             therapyExchangeCount: 10,
             therapyAudio: null,
             therapyAudioPlaying: false,
-            therapyAudioEnabled: false,
 
             // Services
             audioService: null,
@@ -345,9 +343,6 @@ export default {
         currentLanguage(newVal) {
             StorageService.setLanguage(newVal);
             this.loadVoices();
-        },
-        therapyAudioEnabled(newVal) {
-            localStorage.setItem('therapyAudioEnabled', newVal);
         }
     },
     async mounted() {
@@ -374,12 +369,6 @@ export default {
                 console.error('Error loading therapy history:', e);
                 this.therapyHistory = [];
             }
-        }
-
-        // Load therapy audio enabled setting from localStorage
-        const savedTherapyAudioEnabled = localStorage.getItem('therapyAudioEnabled');
-        if (savedTherapyAudioEnabled !== null) {
-            this.therapyAudioEnabled = savedTherapyAudioEnabled === 'true';
         }
     },
     beforeUnmount() {
@@ -508,49 +497,29 @@ export default {
                 // Start
                 this.lastError = '';
 
-                try {
-                    const audioStream = await this.audioService.getAudioStream(this.selectedDeviceId);
+                const audioStream = await this.audioService.getAudioStream(this.selectedDeviceId);
 
-                    if (this.$refs.audioVisualization) {
-                        await this.$refs.audioVisualization.start(audioStream);
-                    }
+                if (this.$refs.audioVisualization) {
+                    await this.$refs.audioVisualization.start(audioStream);
+                }
 
-                    // Start full recording if enabled
-                    if (this.enableRecording) {
-                        await this.startFullRecording();
-                    }
+                // Start full recording if enabled
+                if (this.enableRecording) {
+                    await this.startFullRecording();
+                }
 
-                    if (this.transcriptionMode === 'webspeech') {
-                        try {
-                            this.speechService.start();
-                            this.isListening = true;
-                        } catch (e) {
-                            this.lastError = this.t('errors.cannotStartRecognition');
-                        }
-                    } else if (this.transcriptionMode === 'whisper') {
-                        this.audioService.startWhisperRecording(async (audioBlob) => {
-                            await this.sendToWhisper(audioBlob);
-                        });
+                if (this.transcriptionMode === 'webspeech') {
+                    try {
+                        this.speechService.start();
                         this.isListening = true;
+                    } catch (e) {
+                        this.lastError = this.t('errors.cannotStartRecognition');
                     }
-                } catch (error) {
-                    console.error('Error getting audio stream:', error);
-
-                    let errorMessage = '';
-                    if (error.name === 'NotFoundError') {
-                        errorMessage = `Audio device not found. Selected device may have been disconnected.`;
-                    } else if (error.name === 'NotAllowedError') {
-                        errorMessage = `Microphone access denied. Please allow access in browser settings.`;
-                    } else if (error.name === 'OverconstrainedError') {
-                        errorMessage = `Selected audio device cannot be used. Device: ${this.selectedDeviceId}. Error: ${error.constraint || 'unknown'}`;
-                    } else if (error.name === 'NotReadableError') {
-                        errorMessage = `Audio device is busy or cannot be accessed. It may be used by another application.`;
-                    } else {
-                        errorMessage = `Failed to access audio device: ${error.message}`;
-                    }
-
-                    this.lastError = errorMessage;
-                    alert(errorMessage);
+                } else if (this.transcriptionMode === 'whisper') {
+                    this.audioService.startWhisperRecording(async (audioBlob) => {
+                        await this.sendToWhisper(audioBlob);
+                    });
+                    this.isListening = true;
                 }
             }
         },
@@ -848,7 +817,6 @@ export default {
                 this.correctionType = note.type || 'default';
 
                 this.showNotesList = false;
-                this.showHistory = false;
 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -892,7 +860,7 @@ export default {
 
                 if ((this.finalTranscript || this.correctedText) && this.serverStatus) {
                     try {
-                        await this.ensureNoteExists(this.correctionType);
+                        await this.ensureNoteExists();
                         console.log('Note zapisana/zaktualizowana, ID:', this.currentNoteId);
                     } catch (error) {
                         console.error('Błąd zapisu notatki:', error);
@@ -951,9 +919,7 @@ export default {
                     this.finalTranscript = '';
                     StorageService.setRawText('');
 
-                    if (this.therapyAudioEnabled) {
-                        this.generateTherapyAudio(data.correctedText);
-                    }
+                    this.generateTherapyAudio(data.correctedText);
                 }
 
                 this.correctedText = data.correctedText;
@@ -1073,3 +1039,4 @@ export default {
 <style>
 /* Custom styles if needed */
 </style>
+

@@ -12,7 +12,12 @@ export class AudioService {
     async getAudioStream(deviceId = null) {
         const constraints = {
             audio: deviceId
-                ? { deviceId: { exact: deviceId } }
+                ? {
+                    deviceId: { exact: deviceId },
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                }
                 : true
         };
 
@@ -22,7 +27,25 @@ export class AudioService {
 
     async getAudioDevices() {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        return devices.filter(device => device.kind === 'audioinput');
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+        return audioInputs.map(device => {
+            const label = device.label || `Audio Input ${device.deviceId.substring(0, 8)}`;
+            let deviceType = 'microphone';
+
+            const lowerLabel = label.toLowerCase();
+            if (lowerLabel.includes('line') || lowerLabel.includes('aux')) {
+                deviceType = 'lineIn';
+            } else if (lowerLabel.includes('virtual') || lowerLabel.includes('loopback') || lowerLabel.includes('cable')) {
+                deviceType = 'virtual';
+            }
+
+            return {
+                ...device,
+                deviceType,
+                displayLabel: label
+            };
+        });
     }
 
     stopStream() {

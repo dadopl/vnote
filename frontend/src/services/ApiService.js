@@ -209,8 +209,12 @@ export class ApiService {
     }
 
     // Notes list methods
-    async getNotes(page = 1, limit = 20) {
-        const response = await fetch(`${this.baseUrl}/api/notes?page=${page}&limit=${limit}`);
+    async getNotes(page = 1, limit = 20, type = null) {
+        let url = `${this.baseUrl}/api/notes?page=${page}&limit=${limit}`;
+        if (type !== null && type !== undefined) {
+            url += `&type=${encodeURIComponent(type)}`;
+        }
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error('Nie udało się pobrać listy notatek');

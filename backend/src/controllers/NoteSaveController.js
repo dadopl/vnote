@@ -5,6 +5,8 @@ class NoteSaveController {
         try {
             const { id, rawText, correctedText, type = 'default' } = req.body;
 
+            console.log('NoteSaveController.save - id:', id, 'type:', type);
+
             if (!rawText && !correctedText) {
                 return res.status(400).json({ error: 'Brak tekstu do zapisania' });
             }
@@ -20,14 +22,15 @@ class NoteSaveController {
 
                 await note.update({
                     rawText: rawText || note.rawText,
-                    transformedText: correctedText || note.transformedText
+                    transformedText: correctedText || note.transformedText,
+                    type: type || note.type
                 });
             } else {
                 // Create new note
                 note = await db.Note.create({
                     rawText: rawText || '',
                     transformedText: correctedText || null,
-                    type: type,
+                    type: type || 'default',
                     customInstruction: null
                 });
             }
