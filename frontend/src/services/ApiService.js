@@ -4,6 +4,42 @@ export class ApiService {
         this.baseUrl = baseUrl;
     }
 
+    async login(email, password) {
+        const response = await fetch(`${this.baseUrl}/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error);
+        }
+
+        return data;
+    }
+
+    async logout() {
+        const response = await fetch(`${this.baseUrl}/api/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        return response.json();
+    }
+
+    async checkSession() {
+        const response = await fetch(`${this.baseUrl}/api/session`, {
+            credentials: 'include'
+        });
+
+        return response.json();
+    }
+
     async checkHealth() {
         const response = await fetch(`${this.baseUrl}/api/health`, {
             signal: AbortSignal.timeout(2000)
@@ -36,21 +72,6 @@ export class ApiService {
         return response.json();
     }
 
-    async transcribe(audioBlob) {
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-
-        const response = await fetch(`${this.baseUrl}/api/transcribe`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Whisper transcription failed');
-        }
-
-        return response.json();
-    }
 
     async saveRecording(audioBlob, name, duration, noteId) {
         const formData = new FormData();
@@ -92,7 +113,9 @@ export class ApiService {
     }
 
     async getRecordingBlob(id) {
-        const response = await fetch(`${this.baseUrl}/api/recordings/${id}`);
+        const response = await fetch(`${this.baseUrl}/api/recordings/${id}`, {
+            credentials: 'include'
+        });
         if (!response.ok) {
             throw new Error('Nie udało się pobrać nagrania');
         }
@@ -281,7 +304,9 @@ export class ApiService {
     }
 
     async getPiperAudios() {
-        const response = await fetch(`${this.baseUrl}/api/piper/audios`);
+        const response = await fetch(`${this.baseUrl}/api/piper/audios`, {
+            credentials: 'include'
+        });
 
         if (!response.ok) {
             throw new Error('Failed to fetch therapy audios');

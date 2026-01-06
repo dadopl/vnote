@@ -1,39 +1,7 @@
 <template>
     <div class="rounded-lg p-4 mb-6 shadow-sm bg-white">
-        <label class="block text-sm font-semibold mb-3 text-slate-700">{{ t('transcription.label') }}</label>
-
-        <!-- Mobile warning -->
-        <div v-if="isMobileDevice && transcriptionMode === 'webspeech'" class="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p class="text-sm text-yellow-800">
-                <strong>{{ t('transcription.mobileWarning') }}</strong><br>
-                {{ t('transcription.mobileWarningText') }}
-            </p>
-        </div>
-
-        <div class="flex gap-3 flex-wrap mb-4">
-            <button
-                @click="$emit('update:transcriptionMode', 'webspeech')"
-                class="px-4 py-2 rounded-lg font-semibold transition-all shadow-sm"
-                :class="transcriptionMode === 'webspeech'
-                    ? 'bg-slate-700 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-600 hover:bg-gray-200'"
-            >
-                {{ t('transcription.webSpeech') }}
-            </button>
-            <button
-                @click="$emit('update:transcriptionMode', 'whisper')"
-                class="px-4 py-2 rounded-lg font-semibold transition-all shadow-sm"
-                :class="transcriptionMode === 'whisper'
-                    ? 'bg-slate-700 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-600 hover:bg-gray-200'"
-                :disabled="!whisperAvailable"
-            >
-                {{ t('transcription.whisper') }} {{ whisperAvailable ? t('transcription.whisperAvailable') : t('transcription.whisperUnavailable') }}
-            </button>
-        </div>
-
         <!-- Correction Type Selection -->
-        <div class="mt-4 pt-4 border-t border-gray-200">
+        <div>
             <label class="block text-sm font-semibold mb-2">{{ t('correction.label') }}</label>
             <div class="flex flex-col gap-3">
                 <select
@@ -107,18 +75,6 @@ export default {
     name: 'TranscriptionSettings',
     mixins: [i18nMixin],
     props: {
-        transcriptionMode: {
-            type: String,
-            required: true
-        },
-        whisperAvailable: {
-            type: Boolean,
-            default: false
-        },
-        isMobileDevice: {
-            type: Boolean,
-            default: false
-        },
         correctionType: {
             type: String,
             required: true
@@ -141,7 +97,6 @@ export default {
         }
     },
     emits: [
-        'update:transcriptionMode',
         'update:correctionType',
         'update:customInstruction',
         'clear-therapy-history',

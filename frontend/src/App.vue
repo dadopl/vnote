@@ -1,12 +1,27 @@
 <template>
     <div class="min-h-screen transition-colors duration-300 bg-gray-50">
-        <div id="app" class="w-full max-w-full px-4 py-8 mx-auto">
+        <!-- Loading state while checking session -->
+        <div v-if="checkingSession" class="flex items-center justify-center min-h-screen">
+            <div class="text-gray-600">Loading...</div>
+        </div>
+
+        <!-- Login Modal -->
+        <login-modal
+            v-else-if="!isAuthenticated"
+            :api-service="apiService"
+            @login-success="onLoginSuccess"
+        />
+
+        <!-- Main App Content -->
+        <div v-else id="app" class="w-full max-w-full px-4 py-8 mx-auto">
             <!-- Header -->
             <app-header
                 :recordings-count="recordings.length"
+                :current-user="currentUser"
                 @language-change="onLanguageChange"
                 @toggle-recordings="showRecordings = !showRecordings"
                 @toggle-history="showHistory = !showHistory"
+                @logout="handleLogout"
             />
 
             <!-- Server Status -->
@@ -24,15 +39,11 @@
 
             <!-- Transcription Settings -->
             <transcription-settings
-                v-model:transcription-mode="transcriptionMode"
                 v-model:correction-type="correctionType"
                 v-model:custom-instruction="customCorrectionInstruction"
-                :whisper-available="whisperAvailable"
-                :is-mobile-device="isMobileDevice"
                 :therapy-exchange-count="therapyExchangeCount"
                 :therapy-history-length="therapyHistory.length"
                 :therapy-audio-enabled="therapyAudioEnabled"
-                @update:transcription-mode="onTranscriptionModeChange"
                 @update:therapyAudioEnabled="therapyAudioEnabled = $event"
                 @clear-therapy-history="clearTherapyHistory"
             />
@@ -44,7 +55,6 @@
                 :word-count="wordCount"
                 :chunk-size="chunkSize"
                 :is-processing="isProcessing"
-                :is-whisper-processing="isWhisperProcessing"
                 :show-success="showSuccess"
             />
 
@@ -187,6 +197,7 @@ import DiaryPanel from './components/DiaryPanel.vue';
 import NotesListModal from './components/NotesListModal.vue';
 import ErrorDisplay from './components/ErrorDisplay.vue';
 import ProcessingLog from './components/ProcessingLog.vue';
+import LoginModal from './components/LoginModal.vue';
 
 // Services
 import { AudioService } from './services/AudioService.js';
@@ -217,28 +228,30 @@ export default {
         DiaryPanel,
         NotesListModal,
         ErrorDisplay,
-        ProcessingLog
+        ProcessingLog,
+        LoginModal
     },
     data() {
         return {
+            // Auth
+            isAuthenticated: false,
+            currentUser: null,
+            checkingSession: true,
+
             // Theme
             darkMode: StorageService.getDarkMode(),
 
             // Server
             serverStatus: false,
             apiKeyConfigured: false,
-            whisperAvailable: false,
 
             // Speech Recognition
             isListening: false,
-            transcriptionMode: StorageService.getTranscriptionMode(),
 
             // Audio Device
             audioDevices: [],
             selectedDeviceId: StorageService.getSelectedDevice(),
 
-            // Whisper Processing
-            isWhisperProcessing: false,
 
             // Full Recording
             isFullRecording: false,
@@ -351,35 +364,21 @@ export default {
         }
     },
     async mounted() {
-        // Initialize services
-        this.audioService = new AudioService();
+        // Initialize API service first (needed for login)
         this.apiService = new ApiService();
-        this.speechService = new SpeechRecognitionService();
 
-        await this.checkServerStatus();
-        await this.loadAudioDevices();
-        await this.loadRecordings();
-        this.initSpeechRecognition();
-        this.startAutoSave();
-        await this.loadVoices();
-        await this.loadDiaryAudios();
-        await this.loadNotes(1);
-
-        // Load therapy history from localStorage
-        const savedTherapyHistory = localStorage.getItem('therapyHistory');
-        if (savedTherapyHistory) {
-            try {
-                this.therapyHistory = JSON.parse(savedTherapyHistory);
-            } catch (e) {
-                console.error('Error loading therapy history:', e);
-                this.therapyHistory = [];
+        // Check session
+        try {
+            const session = await this.apiService.checkSession();
+            if (session.authenticated) {
+                this.isAuthenticated = true;
+                this.currentUser = session.user;
+                await this.initializeApp();
             }
-        }
-
-        // Load therapy audio enabled setting from localStorage
-        const savedTherapyAudioEnabled = localStorage.getItem('therapyAudioEnabled');
-        if (savedTherapyAudioEnabled !== null) {
-            this.therapyAudioEnabled = savedTherapyAudioEnabled === 'true';
+        } catch (error) {
+            console.error('Session check failed:', error);
+        } finally {
+            this.checkingSession = false;
         }
     },
     beforeUnmount() {
@@ -391,18 +390,63 @@ export default {
         }
     },
     methods: {
+        async initializeApp() {
+            // Initialize other services
+            this.audioService = new AudioService();
+            this.speechService = new SpeechRecognitionService();
+
+            await this.checkServerStatus();
+            await this.loadAudioDevices();
+            await this.loadRecordings();
+            this.initSpeechRecognition();
+            this.startAutoSave();
+            await this.loadVoices();
+            await this.loadDiaryAudios();
+            await this.loadNotes(1);
+
+            // Load therapy history from localStorage
+            const savedTherapyHistory = localStorage.getItem('therapyHistory');
+            if (savedTherapyHistory) {
+                try {
+                    this.therapyHistory = JSON.parse(savedTherapyHistory);
+                } catch (e) {
+                    console.error('Error loading therapy history:', e);
+                    this.therapyHistory = [];
+                }
+            }
+
+            // Load therapy audio enabled setting from localStorage
+            const savedTherapyAudioEnabled = localStorage.getItem('therapyAudioEnabled');
+            if (savedTherapyAudioEnabled !== null) {
+                this.therapyAudioEnabled = savedTherapyAudioEnabled === 'true';
+            }
+        },
+
+        async onLoginSuccess(user) {
+            this.isAuthenticated = true;
+            this.currentUser = user;
+            await this.initializeApp();
+        },
+
+        async handleLogout() {
+            try {
+                await this.apiService.logout();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            this.isAuthenticated = false;
+            this.currentUser = null;
+            if (this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+            }
+            if (this.audioService) {
+                this.audioService.stopStream();
+            }
+        },
+
         onLanguageChange(lang) {
             this.currentLanguage = lang;
             StorageService.setLanguage(lang);
-        },
-
-        onTranscriptionModeChange(mode) {
-            this.transcriptionMode = mode;
-            StorageService.setTranscriptionMode(mode);
-            if (this.isListening) {
-                this.toggleListening();
-                this.$nextTick(() => this.toggleListening());
-            }
         },
 
         async checkServerStatus() {
@@ -410,7 +454,6 @@ export default {
                 const data = await this.apiService.checkHealth();
                 this.serverStatus = true;
                 this.apiKeyConfigured = data.hasApiKey;
-                this.whisperAvailable = data.whisperAvailable || false;
                 this.lastError = '';
             } catch (error) {
                 this.serverStatus = false;
@@ -487,11 +530,7 @@ export default {
         async toggleListening() {
             if (this.isListening) {
                 // Stop
-                if (this.transcriptionMode === 'webspeech') {
-                    this.speechService.stop();
-                } else if (this.transcriptionMode === 'whisper') {
-                    this.audioService.stopWhisperRecording();
-                }
+                this.speechService.stop();
 
                 // Stop full recording if enabled
                 if (this.enableRecording && this.isFullRecording) {
@@ -520,18 +559,11 @@ export default {
                         await this.startFullRecording();
                     }
 
-                    if (this.transcriptionMode === 'webspeech') {
-                        try {
-                            this.speechService.start();
-                            this.isListening = true;
-                        } catch (e) {
-                            this.lastError = this.t('errors.cannotStartRecognition');
-                        }
-                    } else if (this.transcriptionMode === 'whisper') {
-                        this.audioService.startWhisperRecording(async (audioBlob) => {
-                            await this.sendToWhisper(audioBlob);
-                        });
+                    try {
+                        this.speechService.start();
                         this.isListening = true;
+                    } catch (e) {
+                        this.lastError = this.t('errors.cannotStartRecognition');
                     }
                 } catch (error) {
                     console.error('Error getting audio stream:', error);
@@ -555,26 +587,6 @@ export default {
             }
         },
 
-        async sendToWhisper(audioBlob) {
-            this.isWhisperProcessing = true;
-
-            try {
-                console.log(`Wysyłam chunk audio do Whisper: ${audioBlob.size} bytes`);
-                const data = await this.apiService.transcribe(audioBlob);
-
-                if (data.text && data.text.trim()) {
-                    console.log(`Otrzymano z Whisper: "${data.text.substring(0, 50)}..."`);
-                    this.finalTranscript += data.text + ' ';
-                } else {
-                    console.log('Whisper zwrócił pusty tekst');
-                }
-
-            } catch (error) {
-                console.error('Whisper error:', error);
-            } finally {
-                this.isWhisperProcessing = false;
-            }
-        },
 
         async startFullRecording() {
             try {

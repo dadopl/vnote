@@ -1,7 +1,8 @@
 const express = require('express');
+const authMiddleware = require('../middleware/auth');
+const authRoutes = require('./auth');
 const healthRoutes = require('./health');
 const correctionRoutes = require('./correction');
-const transcriptionRoutes = require('./transcription');
 const recordingsRoutes = require('./recordings');
 const notesRoutes = require('./notes');
 const ttsRoutes = require('./tts');
@@ -10,15 +11,17 @@ const piperRoutes = require('./piper');
 
 const router = express.Router();
 
-// Mount all routes
+// Public routes (no auth required)
+router.use('/api', authRoutes);
 router.use('/api', healthRoutes);
-router.use('/api', correctionRoutes);
-router.use('/api', transcriptionRoutes);
-router.use('/api', recordingsRoutes);
-router.use('/api', notesRoutes);
-router.use('/api', ttsRoutes);
-router.use('/api', emailRoutes);
-router.use('/api', piperRoutes);
+
+// Protected routes (auth required)
+router.use('/api', authMiddleware, correctionRoutes);
+router.use('/api', authMiddleware, recordingsRoutes);
+router.use('/api', authMiddleware, notesRoutes);
+router.use('/api', authMiddleware, ttsRoutes);
+router.use('/api', authMiddleware, emailRoutes);
+router.use('/api', authMiddleware, piperRoutes);
 
 module.exports = router;
 

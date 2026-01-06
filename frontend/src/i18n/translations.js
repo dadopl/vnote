@@ -14,7 +14,8 @@ export const translations = {
             recordings: 'Recordings',
             history: 'History',
             diaryAudio: 'Audio Diary',
-            allNotes: 'All notes'
+            allNotes: 'All notes',
+            logout: 'Logout'
         },
 
         // Server status
@@ -254,7 +255,8 @@ export const translations = {
             recordings: 'Nagrania',
             history: 'Historia',
             diaryAudio: 'Dziennik Audio',
-            allNotes: 'Wszystkie notatki'
+            allNotes: 'Wszystkie notatki',
+            logout: 'Wyloguj'
         },
 
         // Server status

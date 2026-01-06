@@ -2,13 +2,12 @@
 
 > ⚠️ **Disclaimer:** This application was created for learning purposes - specifically to practice pair programming with AI. It is not recommended for production use or anything other than experimentation and fun!
 
-Speech-to-text application with automatic AI correction by Claude. Supports both Web Speech API (instant) and Whisper AI (more accurate, local).
+Speech-to-text application with automatic AI correction by Claude. Uses Web Speech API for instant browser-based transcription.
 
 ## Features
 
 ### Voice Transcription
 - **Web Speech API** - fast browser-based transcription (Chrome/Edge)
-- **Whisper AI** - more accurate transcription via OpenAI Whisper (locally in Docker)
 - Audio device selection (microphone)
 - Real-time audio visualization
   - Volume level (progress bar)
@@ -122,8 +121,6 @@ MYSQL_ROOT_PASSWORD=root_secure_pass_2024
 
 # Other settings
 PORT=7776
-WHISPER_MODEL=base
-WHISPER_URL=http://whisper:9000
 NODE_ENV=development
 ```
 
@@ -155,7 +152,40 @@ MAILER_DSN=smtp://username:password@smtp.yourserver.com:587?encryption=tls
 - `.env` contains only example values and can be committed
 - Docker will automatically use `.env.local` if it exists
 
-### 3. Generating SSL Certificates (for HTTPS)
+### 3. User Management (Authentication)
+
+Users are stored in `backend/src/config/users.json` file with MD5 password hashes.
+
+#### Create users.json file:
+```bash
+cp backend/src/config/users.json.example backend/src/config/users.json
+```
+
+#### Edit users.json with your users:
+```json
+[
+  {
+    "email": "admin@example.com",
+    "passwordHash": "21232f297a57a5a743894a0e4a801fc3"
+  }
+]
+```
+
+#### Generate MD5 hash for password:
+```bash
+# Linux/macOS
+echo -n "your_password" | md5sum | cut -d' ' -f1
+
+# Or use online MD5 generator
+```
+
+**Default credentials (from example):**
+- Email: `admin@vnotes.local`
+- Password: `admin` (MD5: `21232f297a57a5a743894a0e4a801fc3`)
+
+**⚠️ IMPORTANT:** Change default credentials immediately after first login!
+
+### 4. Generating SSL Certificates (for HTTPS)
 
 The application uses Nginx with SSL/TLS. You can use self-signed certificates (for development) or Let's Encrypt (for production).
 
@@ -270,7 +300,6 @@ docker-compose down
 
 ### Services
 - **voice-notes-app** - main application (frontend + backend)
-- **whisper-service** - Whisper AI transcription service
 - **piper-service** - Piper local TTS engine (for therapy voice responses)
 - **vnotes-mariadb** - MariaDB database
 - **vnotes-phpmyadmin** - phpMyAdmin for database management
@@ -294,8 +323,8 @@ docker-compose down
               ┌──────────────┬───────────┼───────────┬──────────────┐
               ▼              ▼           ▼           ▼              ▼
      ┌──────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
-     │   MariaDB    │ │ Whisper  │ │  Piper   │ │ElevenLabs│ │   Claude     │
-     │  Port 3306   │ │Port 9000 │ │Port 5000 │ │   API    │ │     API      │
+     │   MariaDB    │ │  Piper   │ │ElevenLabs│ │  Claude  │ │   Browser    │
+     │  Port 3306   │ │Port 5000 │ │   API    │ │   API    │ │  Speech API  │
      └──────────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────┘
 ```
 
@@ -307,8 +336,6 @@ docker-compose down
 ### Text Correction
 - `POST /api/correct` - correct text with AI (supports `language` parameter)
 
-### Transcription
-- `POST /api/transcribe` - transcribe audio with Whisper
 
 ### Recordings
 - `GET /api/recordings` - list recordings
@@ -346,8 +373,6 @@ docker-compose down
 | `PORT` | Backend port | 7776 |
 | `CLAUDE_API_KEY` | Claude API key | - |
 | `ELEVEN_LABS_API_KEY` | ElevenLabs API key | - |
-| `WHISPER_MODEL` | Whisper model (tiny/base/small/medium/large) | base |
-| `WHISPER_URL` | Whisper service URL | http://whisper:9000 |
 | `PIPER_URL` | Piper TTS service URL | http://piper:5000 |
 | `DB_HOST` | Database host | mariadb |
 | `DB_PORT` | Database port | 3306 |
@@ -364,10 +389,6 @@ docker-compose down
 - Check if correct device is selected
 - Try a different browser (Chrome/Edge recommended)
 
-### Whisper not working
-- Check if whisper-service container is running: `docker-compose ps`
-- Check logs: `docker-compose logs whisper-service`
-- First run may take time (downloading model)
 
 ### TTS not working
 - Check if `ELEVEN_LABS_API_KEY` is set in `.env.local`

@@ -1,10 +1,14 @@
-20m<template>
+<template>
     <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-3xl md:text-4xl font-bold mb-2 text-slate-800">{{ t('header.title') }}</h1>
             <p class="text-slate-600">{{ t('header.subtitle') }}</p>
         </div>
         <div class="flex gap-3 items-center">
+            <!-- User info -->
+            <span v-if="currentUser" class="text-sm text-slate-600">
+                {{ currentUser.email }}
+            </span>
             <!-- Language Selector -->
             <select
                 :value="currentLanguage"
@@ -26,6 +30,12 @@
             >
                 {{ t('nav.history') }}
             </button>
+            <button
+                @click="$emit('logout')"
+                class="px-4 py-2 rounded-lg font-semibold transition-all shadow-sm hover:shadow-md bg-red-600 hover:bg-red-700 text-white"
+            >
+                {{ t('nav.logout') }}
+            </button>
         </div>
     </div>
 </template>
@@ -40,9 +50,13 @@ export default {
         recordingsCount: {
             type: Number,
             default: 0
+        },
+        currentUser: {
+            type: Object,
+            default: null
         }
     },
-    emits: ['language-change', 'toggle-recordings', 'toggle-history']
+    emits: ['language-change', 'toggle-recordings', 'toggle-history', 'logout']
 };
 </script>
 

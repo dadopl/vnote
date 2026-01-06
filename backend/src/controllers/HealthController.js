@@ -2,12 +2,10 @@ class HealthController {
     async check(req, res) {
         try {
             const hasApiKey = !!process.env.CLAUDE_API_KEY;
-            const whisperAvailable = !!process.env.WHISPER_URL;
 
             res.json({
                 status: 'ok',
                 hasApiKey,
-                whisperAvailable,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {

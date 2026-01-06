@@ -47,24 +47,13 @@
                 </span>
             </div>
 
-            <!-- Whisper Processing -->
-            <div v-if="isWhisperProcessing" class="flex items-center gap-2">
-                <div class="relative">
-                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <div class="absolute inset-0 w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <span class="text-sm text-purple-600">
-                    🤖 Przetwarzam audio...
-                </span>
-            </div>
-
             <!-- Success Indicator -->
             <div 
                 v-if="showSuccess"
                 class="flex items-center gap-2 transition-opacity duration-500"
             >
                 <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-sm text-green-600">✅ Skorygowano!</span>
+                <span class="text-sm text-green-600">Skorygowano!</span>
             </div>
         </div>
     </div>
@@ -79,7 +68,6 @@ export default {
         wordCount: Number,
         chunkSize: Number,
         isProcessing: Boolean,
-        isWhisperProcessing: Boolean,
         showSuccess: Boolean
     }
 };

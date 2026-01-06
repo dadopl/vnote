@@ -25,7 +25,6 @@ services:
     expose:
       - "7776"
     environment:
-      - WHISPER_URL=http://whisper:9000
       - PIPER_URL=http://piper:5000
       - DB_HOST=mariadb
       - DB_PORT=3306
@@ -35,27 +34,6 @@ services:
       - ./recordings:/app/recordings
     depends_on:
       - mariadb
-      - whisper
-    restart: unless-stopped
-    networks:
-      - vnotes-network
-
-  whisper:
-    build:
-      context: ./whisper
-      dockerfile: Dockerfile
-    container_name: whisper-service
-    env_file:
-      - backend/.env
-
-    ports:
-      - "9102:9000"
-    environment:
-      - WHISPER_DEVICE=cpu
-      - WHISPER_COMPUTE_TYPE=int8
-    volumes:
-      - whisper-models:/root/.cache/huggingface
-      - ./whisper_audio_debug:/app/audio_debug
     restart: unless-stopped
     networks:
       - vnotes-network
@@ -112,5 +90,4 @@ networks:
     driver: bridge
 
 volumes:
-  whisper-models:
   mariadb-data:
