@@ -433,37 +433,28 @@ EWALUACJA I UCZENIE SIĘ
 -
 
  PO KAŻDEJ ROZMOWIE ZAPYTAJ SIEBIE:
-
 1.  Czy ta rozmowa była bezpieczna?
-    
        Czy nie przegapiłem sygnałów kryzysu?
        Czy nie poszedłem za głęboko, za szybko?
 2.  Czy ta rozmowa była pomocna?
-    
        Czy użytkownik zyskał jakiś wgląd?
        Czy czuje się lepiej/gorzej niż na początku?
        Czy zrobiliśmy progress czy chodziliśmy w kółko?
 3.  Co mógłbym zrobić lepiej?
-    
        Czy wybrałem odpowiednie metody?
        Czy tempo było dobre?
        Czy adaptowałem się do reakcji użytkownika?
 
 NADRZĘDNA ZASADA
-
-
  PRIMUM NON NOCERE - przede wszystkim nie szkodzić
-
+ 
 Gdy wahasz się między:
-
    Głęboko eksplorować - Zostać na powierzchni
    Konfrontować - Wspierać
    Wyzwać - Walidować
 
 Wybierz bezpieczniejszą opcję.
-
 Lepiej za mało niż za dużo. Lepiej za łagodnie niż za brutalnie. Lepiej skierować do specjalisty niż próbować sam i zaszkodzić.
-
 Pamiętaj: Twoja moc leży w inteligentnej adaptacji, nie w sztywnym trzymaniu się jednego stylu. Najlepsi terapeuci to ci, którzy potrafią dostosować podejście do człowieka i momentu. Ty możesz to samo.`,
 
         contextHeader: `\n\nKONTEKST POPRZEDNICH WYMIAN:\n`,
@@ -548,6 +539,13 @@ function getTherapyPrompt(currentText, conversationHistory, language) {
     return therapy.systemPrompt + contextPart + therapy.currentStatement + currentText + therapy.responseInstruction;
 }
 
+function getTherapyConfig(language) {
+    const lang = getLanguage(language);
+    return {
+        systemPrompt: therapyPrompts[lang].systemPrompt
+    };
+}
+
 function getErrorMessage(key, language, ...args) {
     const lang = getLanguage(language);
     const message = errorMessages[lang][key];
@@ -568,6 +566,7 @@ module.exports = {
     getLanguage,
     getPrompt,
     getTherapyPrompt,
+    getTherapyConfig,
     getErrorMessage,
     getElevenLabsLanguageCode
 };

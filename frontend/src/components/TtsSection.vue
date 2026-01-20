@@ -1,8 +1,25 @@
 <template>
-    <div v-if="correctedText" class="mb-6 rounded-lg p-4 shadow-sm border bg-white border-gray-200">
-        <h3 class="text-lg font-semibold mb-4">{{ t('tts.title') }}</h3>
+    <div v-if="correctedText" class="mb-6 rounded-lg shadow-sm border bg-white border-gray-200">
+        <!-- Collapsible Header -->
+        <button
+            @click="isExpanded = !isExpanded"
+            class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors rounded-lg"
+        >
+            <span class="text-lg font-semibold">{{ t('tts.title') }}</span>
+            <svg
+                class="w-5 h-5 transition-transform duration-200"
+                :class="{ 'rotate-180': isExpanded }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
 
-        <div class="flex flex-col md:flex-row gap-3 items-start md:items-end">
+        <!-- Collapsible Content -->
+        <div v-show="isExpanded" class="px-4 pb-4">
+            <div class="flex flex-col md:flex-row gap-3 items-start md:items-end">
             <!-- Voice Selection -->
             <div class="flex-1 w-full">
                 <label class="block text-sm font-semibold mb-2">{{ t('tts.selectVoice') }}</label>
@@ -72,10 +89,11 @@
             </button>
         </div>
 
-        <!-- Warning message -->
-        <p v-if="textLength > 2000" class="mt-3 text-sm text-red-500">
-            {{ t('tts.textTooLong') }}
-        </p>
+            <!-- Warning message -->
+            <p v-if="textLength > 2000" class="mt-3 text-sm text-red-500">
+                {{ t('tts.textTooLong') }}
+            </p>
+        </div>
     </div>
 </template>
 
@@ -122,6 +140,11 @@ export default {
         'update:style',
         'generate'
     ],
+    data() {
+        return {
+            isExpanded: false
+        };
+    },
     computed: {
         textLength() {
             return this.correctedText.length;

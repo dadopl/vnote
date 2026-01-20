@@ -1,8 +1,9 @@
 <template>
     <div class="mb-6">
-        <!-- Recording Checkbox -->
+        <!-- Recording and AutoSave Checkboxes -->
         <div class="mb-4 p-3 rounded-lg border bg-gray-50 border-gray-200">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <!-- Recording Checkbox -->
                 <label class="flex items-center gap-3 cursor-pointer flex-1">
                     <input
                         type="checkbox"
@@ -18,6 +19,23 @@
                         </span>
                     </span>
                 </label>
+
+                <!-- AutoSave Checkbox -->
+                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                    <input
+                        type="checkbox"
+                        :checked="autoSaveEnabled"
+                        @change="$emit('update:autoSaveEnabled', $event.target.checked)"
+                        class="w-5 h-5 rounded"
+                    >
+                    <span class="flex-1">
+                        <span class="font-semibold block">{{ t('settings.autoSave') }}</span>
+                        <span class="text-xs mt-1 block text-gray-500">
+                            {{ t('settings.autoSaveDescription') }}
+                        </span>
+                    </span>
+                </label>
+
                 <div v-if="isFullRecording" class="flex items-center gap-3 flex-shrink-0">
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -142,6 +160,10 @@ export default {
         totalNotes: {
             type: Number,
             default: 0
+        },
+        autoSaveEnabled: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
@@ -152,7 +174,8 @@ export default {
         'show-email-modal',
         'toggle-diary-panel',
         'toggle-notes-list',
-        'update:enableRecording'
+        'update:enableRecording',
+        'update:autoSaveEnabled'
     ],
     methods: {
         formatDuration(seconds) {

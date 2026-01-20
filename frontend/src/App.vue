@@ -43,8 +43,6 @@
                 v-model:custom-instruction="customCorrectionInstruction"
                 :therapy-exchange-count="therapyExchangeCount"
                 :therapy-history-length="therapyHistory.length"
-                :therapy-audio-enabled="therapyAudioEnabled"
-                @update:therapyAudioEnabled="therapyAudioEnabled = $event"
                 @clear-therapy-history="clearTherapyHistory"
             />
 
@@ -73,6 +71,7 @@
                 :has-text="!!finalTranscript"
                 :has-corrected-text="!!correctedText"
                 v-model:enable-recording="enableRecording"
+                v-model:auto-save-enabled="autoSaveEnabled"
                 :is-full-recording="isFullRecording"
                 :recording-duration="recordingDuration"
                 :recording-size="recordingSize"
@@ -97,15 +96,6 @@
                 v-model:style="ttsStyle"
                 :is-generating="isGeneratingAudio"
                 @generate="generateAudio"
-            />
-
-            <!-- Therapy Audio Player -->
-            <therapy-audio-player
-                :audio="therapyAudio"
-                :audio-url="therapyAudioUrl"
-                :is-therapy-mode="correctionType === 'sesja'"
-                :auto-play="true"
-                @delete="deleteTherapyAudio"
             />
 
             <!-- Text Areas -->
@@ -188,7 +178,6 @@ import AudioVisualization from './components/AudioVisualization.vue';
 import StatusIndicators from './components/StatusIndicators.vue';
 import ControlButtons from './components/ControlButtons.vue';
 import TtsSection from './components/TtsSection.vue';
-import TherapyAudioPlayer from './components/TherapyAudioPlayer.vue';
 import TextAreas from './components/TextAreas.vue';
 import EmailModal from './components/EmailModal.vue';
 import RecordingsPanel from './components/RecordingsPanel.vue';
@@ -220,7 +209,6 @@ export default {
         StatusIndicators,
         ControlButtons,
         TtsSection,
-        TherapyAudioPlayer,
         TextAreas,
         EmailModal,
         RecordingsPanel,
@@ -285,6 +273,7 @@ export default {
             // Settings
             chunkSize: 50,
             autoSaveInterval: null,
+            autoSaveEnabled: false,
 
             // Note management
             currentNoteId: null,
@@ -314,9 +303,6 @@ export default {
             // Therapy session
             therapyHistory: [],
             therapyExchangeCount: 10,
-            therapyAudio: null,
-            therapyAudioPlaying: false,
-            therapyAudioEnabled: false,
 
             // Services
             audioService: null,
@@ -333,18 +319,12 @@ export default {
         },
         isMobileDevice() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        },
-        therapyAudioUrl() {
-            if (this.therapyAudio && this.therapyAudio.filename) {
-                return this.apiService.getPiperAudioUrl(this.therapyAudio.filename);
-            }
-            return null;
         }
     },
     watch: {
         wordCount(newCount) {
             if (newCount > 0 && newCount % this.chunkSize === 0 && !this.isProcessing && this.serverStatus) {
-                this.sendToAI();
+                // this.sendToAI();
             }
         },
         darkMode(newVal) {
@@ -359,8 +339,14 @@ export default {
             StorageService.setLanguage(newVal);
             this.loadVoices();
         },
-        therapyAudioEnabled(newVal) {
-            localStorage.setItem('therapyAudioEnabled', newVal);
+        autoSaveEnabled(newVal) {
+            localStorage.setItem('autoSaveEnabled', newVal);
+            if (newVal) {
+                this.startAutoSave();
+            } else if (this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+                this.autoSaveInterval = null;
+            }
         }
     },
     async mounted() {
@@ -399,7 +385,13 @@ export default {
             await this.loadAudioDevices();
             await this.loadRecordings();
             this.initSpeechRecognition();
-            this.startAutoSave();
+
+            // Load autoSaveEnabled from localStorage
+            const savedAutoSave = localStorage.getItem('autoSaveEnabled');
+            if (savedAutoSave === 'true') {
+                this.autoSaveEnabled = true;
+            }
+
             await this.loadVoices();
             await this.loadDiaryAudios();
             await this.loadNotes(1);
@@ -413,12 +405,6 @@ export default {
                     console.error('Error loading therapy history:', e);
                     this.therapyHistory = [];
                 }
-            }
-
-            // Load therapy audio enabled setting from localStorage
-            const savedTherapyAudioEnabled = localStorage.getItem('therapyAudioEnabled');
-            if (savedTherapyAudioEnabled !== null) {
-                this.therapyAudioEnabled = savedTherapyAudioEnabled === 'true';
             }
         },
 
@@ -894,6 +880,14 @@ export default {
         },
 
         async startAutoSave() {
+            if (!this.autoSaveEnabled) {
+                return;
+            }
+
+            if (this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+            }
+
             this.autoSaveInterval = setInterval(async () => {
                 if (this.finalTranscript) {
                     StorageService.setRawText(this.finalTranscript);
@@ -962,10 +956,6 @@ export default {
 
                     this.finalTranscript = '';
                     StorageService.setRawText('');
-
-                    if (this.therapyAudioEnabled) {
-                        this.generateTherapyAudio(data.correctedText);
-                    }
                 }
 
                 this.correctedText = data.correctedText;
@@ -1000,7 +990,6 @@ export default {
         clearTherapyHistory() {
             if (confirm(this.t('therapy.clearHistory') + '?')) {
                 this.therapyHistory = [];
-                this.therapyAudio = null;
                 localStorage.removeItem('therapyHistory');
                 this.showSuccess = true;
                 setTimeout(() => {
@@ -1009,31 +998,6 @@ export default {
             }
         },
 
-        async generateTherapyAudio(text) {
-            try {
-                const voice = this.currentLanguage === 'pl' ? 'pl_PL-gosia-medium' : 'en_US-lessac-medium';
-                const audio = await this.apiService.generatePiperAudio(text, voice);
-
-                if (audio) {
-                    this.therapyAudio = audio;
-                }
-            } catch (error) {
-                console.error('Error generating therapy audio:', error);
-            }
-        },
-
-        async deleteTherapyAudio() {
-            if (!this.therapyAudio) return;
-
-            try {
-                await this.apiService.deletePiperAudio(this.therapyAudio.filename);
-                this.therapyAudio = null;
-                this.therapyAudioPlaying = false;
-            } catch (error) {
-                console.error('Error deleting therapy audio:', error);
-                this.lastError = error.message;
-            }
-        },
 
         clearAll() {
             if (!confirm('Czy na pewno chcesz wyczyścić całą treść?')) {

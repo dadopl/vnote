@@ -25,7 +25,6 @@ services:
     expose:
       - "7776"
     environment:
-      - PIPER_URL=http://piper:5000
       - DB_HOST=mariadb
       - DB_PORT=3306
     volumes:
@@ -34,19 +33,6 @@ services:
       - ./recordings:/app/recordings
     depends_on:
       - mariadb
-    restart: unless-stopped
-    networks:
-      - vnotes-network
-
-  piper:
-    build:
-      context: ./piper
-      dockerfile: Dockerfile
-    container_name: piper-service
-    environment:
-      - PIPER_OUTPUT_DIR=/app/output
-    volumes:
-      - ./recordings/piper:/app/output
     restart: unless-stopped
     networks:
       - vnotes-network

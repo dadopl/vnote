@@ -7,7 +7,6 @@ const recordingsRoutes = require('./recordings');
 const notesRoutes = require('./notes');
 const ttsRoutes = require('./tts');
 const emailRoutes = require('./email');
-const piperRoutes = require('./piper');
 
 const router = express.Router();
 
@@ -21,7 +20,6 @@ router.use('/api', authMiddleware, recordingsRoutes);
 router.use('/api', authMiddleware, notesRoutes);
 router.use('/api', authMiddleware, ttsRoutes);
 router.use('/api', authMiddleware, emailRoutes);
-router.use('/api', authMiddleware, piperRoutes);
 
 module.exports = router;
 

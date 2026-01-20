@@ -84,6 +84,12 @@ export const translations = {
             enableDescription: 'Recording will be automatically saved to the server after stopping dictation'
         },
 
+        // Settings
+        settings: {
+            autoSave: 'Auto-save notes',
+            autoSaveDescription: 'Automatically save notes to database every 30 seconds'
+        },
+
         // Control buttons
         buttons: {
             start: 'Start',
@@ -323,6 +329,12 @@ export const translations = {
         recording: {
             enableLabel: 'Nagrywaj audio podczas dyktowania',
             enableDescription: 'Nagranie zostanie automatycznie zapisane na serwerze po zatrzymaniu dyktowania'
+        },
+
+        // Settings
+        settings: {
+            autoSave: 'Autozapis notatek',
+            autoSaveDescription: 'Automatycznie zapisuj notatki do bazy danych co 30 sekund'
         },
 
         // Control buttons

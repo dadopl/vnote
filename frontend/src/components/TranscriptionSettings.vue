@@ -25,7 +25,7 @@
                         <strong>{{ t('therapy.title') }}</strong><br>
                         {{ t('therapy.description') }}
                     </p>
-                    <div class="flex items-center gap-3 text-xs text-blue-700 mb-3">
+                    <div class="flex items-center gap-3 text-xs text-blue-700">
                         <span>{{ t('therapy.context') }} {{ therapyExchangeCount }} {{ t('therapy.exchanges') }}</span>
                         <span>•</span>
                         <span>{{ t('therapy.history') }} {{ therapyHistoryLength }} {{ t('therapy.exchanges') }}</span>
@@ -36,20 +36,6 @@
                         >
                             {{ t('therapy.clearHistory') }}
                         </button>
-                    </div>
-                    <div class="pt-3 border-t border-blue-200">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                :checked="therapyAudioEnabled"
-                                @change="$emit('update:therapyAudioEnabled', $event.target.checked)"
-                                class="w-4 h-4 rounded"
-                            >
-                            <span class="text-sm">
-                                <span class="font-semibold text-blue-900">{{ t('therapy.enableAudio') }}</span>
-                                <span class="block text-xs text-blue-700 mt-0.5">{{ t('therapy.enableAudioDescription') }}</span>
-                            </span>
-                        </label>
                     </div>
                 </div>
 
@@ -90,17 +76,12 @@ export default {
         therapyHistoryLength: {
             type: Number,
             default: 0
-        },
-        therapyAudioEnabled: {
-            type: Boolean,
-            default: false
         }
     },
     emits: [
         'update:correctionType',
         'update:customInstruction',
-        'clear-therapy-history',
-        'update:therapyAudioEnabled'
+        'clear-therapy-history'
     ]
 };
 </script>
