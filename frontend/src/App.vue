@@ -508,7 +508,19 @@ export default {
             });
 
             this.speechService.onError((error) => {
-                this.lastError = `Błąd rozpoznawania: ${error}`;
+                // Błąd "network" występuje po dłuższym czasie - automatycznie restartujemy
+                if (error === 'network' && this.isListening && this.transcriptionMode === 'webspeech') {
+                    setTimeout(() => {
+                        try {
+                            this.speechService.start();
+                        } catch (e) {
+                            console.error('Restart after network error failed:', e);
+                        }
+                    }, 500);
+                    return;
+                }
+
+                this.lastError = `${this.t('errors.recognitionError')} ${error}`;
                 console.error('Speech recognition error:', error);
             });
         },
